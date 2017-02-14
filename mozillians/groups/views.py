@@ -176,8 +176,8 @@ def show(request, url, alias_model, template):
 
         else:
             # only show full members, or this user
-            memberships = group.groupmembership_set.filter(
-                Q(status=GroupMembership.MEMBER) | Q(userprofile=profile))
+            memberships = group.groupmembership_set.filter(Q(status=GroupMembership.MEMBER) |
+                                                           Q(userprofile=profile))
 
         invitation = get_object_or_none(Invite, redeemer=profile, group=group, accepted=False)
         data.update(invitation=invitation)

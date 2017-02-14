@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.utils.timezone import now
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy as _lazy
@@ -158,6 +159,7 @@ class GroupMembership(models.Model):
     status = models.CharField(choices=MEMBERSHIP_STATUS_CHOICES, max_length=15)
     date_joined = models.DateTimeField(null=True, blank=True)
     updated_on = models.DateTimeField(auto_now=True, null=True)
+    needs_renewal = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('userprofile', 'group')
@@ -305,6 +307,8 @@ class Group(GroupBase):
                         (GroupMembership.PENDING_TERMS, GroupMembership.MEMBER)]
             if (old_status, status) in statuses:
                 # Status changed
+                # let's remove the needs renewal flag
+                membership.needs_renewal = False
                 membership.save()
                 if membership.status in [GroupMembership.PENDING, GroupMembership.MEMBER]:
                     email_membership_change.delay(self.pk, userprofile.user.pk, old_status, status)
@@ -364,10 +368,12 @@ class Group(GroupBase):
 
     def has_pending_member(self, userprofile):
         """
-        Return True if this user is in this group with status PENDING.
+        Return True if this user is in this group with status PENDING or
+        there is a flag marking the profile ready for a renewal
         """
-        return self.groupmembership_set.filter(userprofile=userprofile,
-                                               status=GroupMembership.PENDING).exists()
+        return (self.groupmembership_set.filter(userprofile=userprofile)
+                                        .filter(Q(status=GroupMembership.PENDING) |
+                                                Q(needs_renewal=True))).exists()
 
 
 class SkillAlias(GroupAliasBase):
