@@ -1,0 +1,131 @@
+version: '2'
+
+services:
+  zoo1:
+    image: zookeeper
+    restart: always
+    ports:
+      - 2181:2181
+    environment:
+      ZOO_MY_ID: "1"
+      ZOO_SERVERS: "server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888"
+
+  zoo2:
+    image: zookeeper
+    restart: always
+    ports:
+      - 2182:2181
+    environment:
+      ZOO_MY_ID: "2"
+      ZOO_SERVERS: "server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888"
+
+  zoo3:
+    image: zookeeper
+    restart: always
+    ports:
+      - 2183:2181
+    environment:
+      ZOO_MY_ID: "3"
+      ZOO_SERVERS: "server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888"
+
+  kafka1:
+    image: ches/kafka
+    ports:
+      - 9092:9092
+      - 7203:7203
+    links:
+      - zoo1
+      - zoo2
+      - zoo3
+    environment:
+      KAFKA_BROKER_ID: "0"
+      KAFKA_ADVERTISED_HOST_NAME: "kafka1"
+      ZOOKEEPER_CONNECTION_STRING: "zoo1:2181,zoo2:2181,zoo3:2181"
+
+  kafka2:
+    image: ches/kafka
+    ports:
+      - 9093:9092
+      - 7204:7203
+    links:
+      - zoo1
+      - zoo2
+      - zoo3
+    environment:
+      KAFKA_BROKER_ID: "1"
+      KAFKA_ADVERTISED_HOST_NAME: "kafka2"
+      ZOOKEEPER_CONNECTION_STRING: "zoo1:2181,zoo2:2181,zoo3:2181"
+
+  kafka3:
+    image: ches/kafka
+    ports:
+      - 9094:9092
+      - 7205:7203
+    links:
+      - zoo1
+      - zoo2
+      - zoo3
+    environment:
+      KAFKA_BROKER_ID: "2"
+      KAFKA_ADVERTISED_HOST_NAME: "kafka3"
+      ZOOKEEPER_CONNECTION_STRING: "zoo1:2181,zoo2:2181,zoo3:2181"
+
+  db:
+    image: mysql:5.5
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+    environment:
+      - MYSQL_DATABASE=mozillians
+      - MYSQL_USER=mozillians
+      - MYSQL_PASSWORD=mozillians
+      - MYSQL_ROOT_PASSWORD=root
+
+  es:
+    image: barnybug/elasticsearch:1.2.1
+
+  memcached:
+    image: memcached
+
+  broker:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+    links:
+      - db
+      - es
+      - memcached
+      - broker
+      - kafka1
+      - kafka2
+      - kafka3
+    command: bash -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+
+  celery:
+    build: .
+    volumes:
+      - .:/code
+    links:
+      - db
+      - es
+      - broker
+      - memcached
+    command: bash -c "python manage.py migrate djcelery && celery -A mozillians worker -B -l INFO"
+    environment:
+      - C_FORCE_ROOT=true
+
+  flower:
+    build: .
+    volumes:
+      - .:/code
+    links:
+      - db
+      - broker
+    ports:
+      - "5555:5555"
+    command: flower -A mozillians --address=0.0.0.0 --port=5555
