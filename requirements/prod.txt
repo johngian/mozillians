@@ -308,3 +308,6 @@ progressbar2==3.12.0 \
 python-utils==2.0.1 \
     --hash=sha256:985f44edf24918d87531c339f8b126ce2d303cbbc9a4c7fc4dc81ac0726079ff \
     --hash=sha256:670f9b992ebfc005329fd9740408f2a704e595d64c8f8da83f7977618dba4acc
+kafka-python==1.3.2 \
+    --hash=sha256:fd4be02c3e8f7da098bbc0989ffc29fae084a49097d337fc9c73efd204e370de \
+    --hash=sha256:628ce1b72bfd364a45f40188309ca7fa4d7d7d10e68c218bbaf86a1aa1b7416e

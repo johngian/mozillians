@@ -294,3 +294,41 @@ def check_spam_account(instance_id, **kwargs):
         }
 
         AbuseReport.objects.get_or_create(**kwargs)
+
+
+@task
+def publish_bulk_iam_integration_data():
+    """Task to send bulk IAM data to integration service."""
+
+    # Avoid circular dependencies
+    from kafka import KafkaProducer
+    from rest_framework.renderers import JSONRenderer
+    from rest_framework.serializers import RelatedField
+
+    from mozillians.users.models import UserProfile
+    from mozillians.users.api.v2 import UserProfileDetailedSerializer
+
+    class IAMSerializer(UserProfileDetailedSerializer):
+        groups = RelatedField(many=True)
+
+        class Meta:
+            model = UserProfile
+            fields = ('username', 'full_name', 'email', 'alternate_emails', 'groups', 'bio',
+                      'photo', 'ircname', 'date_mozillian', 'timezone', 'title', 'story_link',
+                      'languages', 'external_accounts', 'websites', 'tshirt', 'is_public',
+                      'is_vouched', 'url', 'city', 'region', 'country')
+
+    config = {
+        'bootstrap_servers': settings.KAFKA_SERVERS,
+        'client_id': 'mozillians',
+    }
+
+    producer = KafkaProducer(**config)
+
+    for profile in UserProfile.objects.all():
+        serializer = IAMSerializer(profile)
+        renderer = JSONRenderer()
+        data = renderer.render(serializer.data)
+        producer.send('iam-mozillians', data)
+
+    producer.flush()
