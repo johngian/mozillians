@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime, timedelta
 
@@ -268,3 +269,97 @@ def check_spam_account(instance_id, **kwargs):
 def index_all_profiles():
     """Task to index all profiles through the admin interface."""
     rebuild_index.Command().handle(interactive=False)
+
+
+@task
+def send_userprofile_to_cis(instance_id, **kwargs):
+
+    from mozillians.groups.models import GroupMembership
+    from mozillians.users.models import UserProfile, ExternalAccount
+    from nameparser import HumanName
+
+    profile = UserProfile.objects.get(pk=instance_id)
+    hn = HumanName(profile.full_name)
+
+    def _get_emails(profile):
+        # Primary email
+        emails = [
+            {
+                'value': profile.email,
+                'verified': True,
+                'primary': True,
+                'name': 'mozillians-primary'
+            }
+        ]
+
+        # Alternate emails
+        for email in profile.alternate_emails:
+            entry = {
+                'value': email.identifier,
+                'verified': True,
+                'primary': False,
+                'name': 'mozillians-alternate-{}'.format(email.pk)
+            }
+            emails.append(entry)
+
+        return emails
+
+    def _get_uris(profile):
+        accounts = []
+        for account in profile.externalaccount_set.exclude(type=ExternalAccount.TYPE_EMAIL):
+            value = account.get_identifier_url()
+            account_type = ExternalAccount.ACCOUNT_TYPES[account.type]
+            if value:
+                entry = {
+                    'value': value,
+                    'primary': False,
+                    'verified': False,
+                    'name': '{}-{}'.format(account_type['name'], account.pk)
+                }
+                accounts.append(entry)
+
+        return accounts
+
+    def _get_groups(profile):
+        memberships = GroupMembership.objects.filter(
+            userprofile=profile,
+            status=GroupMembership.MEMBER
+        )
+        groups = [m.group.name for m in memberships]
+        return groups
+
+    data = {
+        'user_id': profile.auth0_user_id,
+        'timezone': profile.timezone,
+        'active': profile.user.is_active,
+        'lastModified': profile.last_updated.isoformat(),
+        'created': profile.user.date_joined.isoformat(),
+        'userName': profile.user.username,
+        'displayName': profile.display_name,
+        'primaryEmail': profile.email,
+        'emails': _get_emails(profile),
+        'uris': _get_uris(profile),
+        'picture': profile.get_photo_url(),
+        'shirtSize': profile.get_tshirt_display(),
+        'groups': _get_groups(profile),
+
+
+        # Derived fields
+        'firstName': hn.first,
+        'lastName': hn.last,
+
+        # Hardcoded fields
+        'preferredLanguage': 'en_US',
+        'phoneNumbers': [],
+        'nicknames': [],
+        'SSHFingerprints': [],
+        'PGPFingerprints': [],
+        'authoritativeGroups': []
+    }
+
+    # Invoke lambda
+    from cis.streams import invoke_cis_lambda
+    payload = json.dumps(data).encode('utf-8')
+    response = invoke_cis_lambda(payload)
+
+    return response
