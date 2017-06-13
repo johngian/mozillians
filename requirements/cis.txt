@@ -1,5 +1,5 @@
 https://github.com/mozilla-iam/cis/archive/master.zip#cis \
---hash=sha256:1bca617b104f7652e2868d207bff8d8128b1dd505c1116be92f9e99273a9e3a5
+--hash=sha256:df03e2e2e03817b4325f730e165be170a358e79a4340526c167fa0406ed45599
 nameparser==0.5.2 \
 --hash=sha256:cee542f8887155cade693058cbcccd939ffab435f6e333350bf4cc1662ce1311 \
 --hash=sha256:afd73dcf0c30632687eb55ead3ee20164477dc139dfe8a9fa50d04aa05a72c17

@@ -293,6 +293,10 @@ class Group(GroupBase):
         membership, _ = GroupMembership.objects.get_or_create(userprofile=userprofile,
                                                               group=self,
                                                               defaults=defaults)
+
+        from mozillians.users.tasks import send_userprofile_to_cis
+        send_userprofile_to_cis(membership.userprofile.pk)
+
         # Remove the need_removal flag in any case
         # We have a renewal, let's save the object.
         if membership.needs_renewal:
@@ -319,6 +323,7 @@ class Group(GroupBase):
                     email_membership_change.delay(self.pk, userprofile.user.pk, old_status, status)
                 # Since there is no demotion, we can check if the new status is MEMBER and
                 # subscribe the user to the NDA newsletter if the group is NDA
+
                 if self.name == settings.NDA_GROUP and status == GroupMembership.MEMBER:
                     subscribe_user_to_basket.delay(userprofile.id,
                                                    [settings.BASKET_NDA_NEWSLETTER])
@@ -345,6 +350,8 @@ class Group(GroupBase):
             # We have either an open group or the request to join a reviewed group is denied
             # or the curator manually declined a user in a pending state.
             membership.delete()
+            from mozillians.users.tasks import send_userprofile_to_cis
+            send_userprofile_to_cis(membership.userprofile.pk)
             # delete the invitation to the group if exists
             Invite.objects.filter(group=self, redeemer=userprofile).delete()
             send_email = True
