@@ -341,3 +341,5 @@ whitenoise==3.3.0 \
 django-haystack==2.6.0 \
     --hash=sha256:a5ff5f20954d22be57b4daa4b93bc4b809705fa57016dc6756080b1a9865c2d7 \
     --hash=sha256:277d82589491f71b2ba158a0afcf94e917e78cf8b84fbd06f4157116074b16d1
+aws-requests-auth==0.3.2 \
+    --hash=sha256:e1c11964d3ac5b3be4c76884bf40076de521299a64233e8822766a8637a64046

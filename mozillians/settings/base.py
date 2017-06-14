@@ -583,12 +583,26 @@ OIDC_OP_DOMAIN = 'auth.mozilla.auth0.com'
 def _lazy_haystack_setup():
     from django.conf import settings
 
-    es_url = settings.ES_URLS[0]
+    from aws_requests_auth.aws_auth import AWSRequestsAuth
+    from elasticsearch import RequestsHttpConnection
+
+    auth = AWSRequestsAuth(
+        aws_access_key=settings.AWS_ES_ACCESS_KEY,
+        aws_secret_access_key=settings.AWS_ES_SECRET_ACCESS_KEY,
+        aws_host=settings.AWS_ES_HOST,
+        aws_region=settings.AWS_ES_REGION,
+        aws_service='es'
+    )
+
     haystack_connections = {
         'default': {
             'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
-            'URL': es_url,
-            'INDEX_NAME': 'mozillians_haystack'
+            'URL': settings.ES_URLS[0],
+            'INDEX_NAME': 'mozillians_haystack',
+            'KWARGS': {
+                'http_auth': auth,
+                'connection_class': RequestsHttpConnection,
+            }
         }
     }
 
