@@ -74,7 +74,7 @@ class UserProfileDetailedSerializer(serializers.HyperlinkedModelSerializer):
     username = serializers.Field(source='user.username')
     email = serializers.Field(source='email')
     photo = serializers.SerializerMethodField('get_photo')
-    alternate_emails = AlternateEmailSerializer(many=True, source='alternate_emails')
+    alternate_emails = AlternateEmailSerializer(many=True, source='idp_profiles')
     groups = GroupSerializer(many=True, source='_groups')
     country = serializers.SerializerMethodField('get_country')
     region = serializers.SerializerMethodField('get_region')
