@@ -2,6 +2,7 @@ import logging
 import os
 import uuid
 from datetime import datetime
+from itertools import chain
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -273,6 +274,28 @@ class UserProfile(UserProfilePrivacyModel):
         _getattr = (lambda x: super(UserProfile, self).__getattribute__(x))
         accounts = _getattr('externalaccount_set').filter(type=ExternalAccount.TYPE_EMAIL)
         return self._filter_accounts_privacy(accounts)
+
+    @property
+    def _api_alternate_emails(self):
+        legacy_emails_qs = self._alternate_emails
+        idp_qs = self._identity_profiles
+
+        e_exclude = []
+        idp_exclude = []
+
+        for e in legacy_emails_qs:
+            if idp_qs.filter(email=e.identifier, privacy__gte=e.privacy).exists():
+                e_exclude.append(e.id)
+
+        legacy_emails_qs = legacy_emails_qs.exclude(id__in=e_exclude)
+
+        for i in idp_qs:
+            if legacy_emails_qs.filter(identifier=i.email, privacy__gte=i.privacy).exists():
+                idp_exclude.append(i.id)
+
+        idp_qs = idp_qs.exclude(id__in=idp_exclude)
+
+        return chain(legacy_emails_qs, idp_qs)
 
     @property
     def _identity_profiles(self):
