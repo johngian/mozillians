@@ -209,9 +209,18 @@ class UserProfileFilter(django_filters.FilterSet):
 
     def filter_emails(self, queryset, name, value):
         """Return users with email matching either primary or alternate email address"""
-        qs = ExternalAccount.objects.filter(type=ExternalAccount.TYPE_EMAIL, identifier=value)
-        users = qs.values_list('user__id', flat=True)
-        query = Q(id__in=users) | Q(user__email=value)
+        legacy_qs = ExternalAccount.objects.filter(
+            type=ExternalAccount.TYPE_EMAIL,
+            identifier=value
+        )
+
+        idp_qs = IdpProfile.objects.filter(
+            email=value
+        )
+
+        legacy_users = legacy_qs.values_list('user__id', flat=True)
+        idp_users = idp_qs.values_list('profile__id', flat=True)
+        query = Q(id__in=legacy_users) | Q(id__in=idp_users) | Q(user__email=value)
         return queryset.filter(query).distinct()
 
     def filter_group(self, queryset, name, value):
