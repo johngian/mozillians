@@ -7,7 +7,7 @@ from mozillians.common.middleware import safe_query_string
 from mozillians.groups.models import Group
 
 
-class OldGroupRedirectionMiddleware(object):
+class OldGroupRedirectionMiddleware:
     """
     Redirect requests for groups from /group/<id>-<url> to
     /group/<url> to avoid breaking group urls with the new url
@@ -15,7 +15,11 @@ class OldGroupRedirectionMiddleware(object):
 
     """
 
-    def process_response(self, request, response):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
         group_url = re.match('^/group/(?P<id>\d+)-(?P<url>[-\w]+)/$',
                              request.path_info)
         if (response.status_code == 404 and
