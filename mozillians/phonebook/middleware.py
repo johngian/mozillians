@@ -5,13 +5,14 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import is_valid_path, reverse
 from django.http import HttpResponseRedirect
+from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import ugettext as _
 
 from mozillians.common.templatetags.helpers import redirect
 from mozillians.common.middleware import safe_query_string
 
 
-class RegisterMiddleware():
+class RegisterMiddleware(MiddlewareMixin):
     """Redirect authenticated users with incomplete profile to register view."""
 
     def process_request(self, request):
@@ -38,7 +39,7 @@ class RegisterMiddleware():
             return redirect('phonebook:profile_edit')
 
 
-class UsernameRedirectionMiddleware():
+class UsernameRedirectionMiddleware:
     """
     Redirect requests for user profiles from /<username> to
     /u/<username> to avoid breaking profile urls with the new url
@@ -46,7 +47,12 @@ class UsernameRedirectionMiddleware():
 
     """
 
-    def process_response(self, request, response):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
         if (response.status_code == 404 and not
             request.path_info.startswith('/u/') and not
             is_valid_path(request.path_info) and
