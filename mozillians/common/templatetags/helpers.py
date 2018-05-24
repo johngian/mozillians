@@ -309,14 +309,7 @@ def get_privacy_level(request):
 @library.global_function
 def get_privacy_aware_photo_url(profile, privacy_level, geometry, **kwargs):
     """Returns privacy aware profile photo url."""
-
-    if profile.privacy_photo >= privacy_level:
-        if not profile.photo:
-            return gravatar(profile.email, size=geometry)
-        return profile.get_photo_thumbnail(geometry, **kwargs).url
-
-    profile.photo = ''
-    return profile.get_photo_thumbnail(geometry, **kwargs).url
+    return profile.get_photo_url(geometry, **kwargs)
 
 
 # Port from jingo.helpers

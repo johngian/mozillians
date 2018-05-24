@@ -552,7 +552,7 @@ class UserProfile(UserProfilePrivacyModel):
         If privacy doesn't allow return default local link.
         """
         privacy_level = getattr(self, '_privacy_level', MOZILLIANS)
-        if (not self.photo and self.privacy_photo >= privacy_level):
+        if (not self.photo and self.privacy_photo >= privacy_level and self.email):
             return gravatar(self.email, size=geometry)
 
         photo_url = self.get_photo_thumbnail(geometry, **kwargs).url
