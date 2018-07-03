@@ -67,7 +67,7 @@
               </h2>
             </li>
           {% endif %}
-          {% if profile.email and privacy_level <= profile.privacy_email %}
+          {% if profile.email %}
             <li>
               <a title="{{ profile.display_name }}" href="mailto:{{ profile.email }}">
               <i class="icon-envelope-o"></i> {{ profile.email|truncate(20, True) }}

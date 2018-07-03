@@ -679,6 +679,7 @@ class EmailAttributeTests(TestCase):
     def test_existing_idp_privacy_allowed(self):
         profile = UserFactory.create(email='foo@foo.com').userprofile
         profile.set_instance_privacy_level(MOZILLIANS)
+
         IdpProfile.objects.create(
             profile=profile,
             auth0_user_id='github|foo@bar.com',
@@ -688,6 +689,7 @@ class EmailAttributeTests(TestCase):
             privacy=PUBLIC
         )
 
+        profile = UserProfile.objects.get(pk=profile.pk)
         eq_(profile.email, 'foo@bar.com')
 
     def test_existing_idp_privacy_not_allowed(self):
