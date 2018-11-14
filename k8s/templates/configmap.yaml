@@ -19,6 +19,7 @@ data:
   DEBUG: 'True'
   DEV: 'True'
   DOMAIN: 'dinopark.mozilla.community'
+  ENABLE_DINOPARK_S3_STORAGE: 'True'
   ES_DISABLED: 'False'
   ES_HOST: 'dino-park-mozillians-memcached-es:9200'
   ES_PROTOCOL: 'http//'
